@@ -19,6 +19,10 @@ from (
     group by region, customer_id
 ) group by region;
 
+--Category-Wise Profit – Total profit by Product_Category.
+select round(sum((unit_price*units_sold)*(1-discount_percent/100)-(cost_price*units_sold)),2)
+as category_revenue, product_category from electrokart group by product_category ;
+
 --High-Value Lost Customers – List churned customers who spent more than ₹50,000 in total.
 select customer_id, total_spend from( 
 select customer_id, max(customer_churn) as churn_flag, round(sum((unit_price*units_sold)*(1-(discount_percent/100))),2) as total_spend
@@ -39,9 +43,6 @@ from electrokart order by category_sales desc limit 5;
 select extract (year from order_date) as order_year, to_char (order_date, 'Month') as month,
 round(sum((unit_price*units_sold)*(1-(discount_percent/100))),2) as revenue from electrokart group by 
 to_char (order_date, 'Month'), extract (year from order_date), extract (month from order_date) order by extract (month from order_date) ;
---Category-Wise Profit – Total profit by Product_Category.
-select round(sum((unit_price*units_sold)*(1-discount_percent/100)-(cost_price*units_sold)),2)
-as category_revenue, product_category from electrokart group by product_category ;
 
 --Churn Prediction Signals 
 with high_returns as (select customer_id, 'high_return' as reason from electrokart 
@@ -57,7 +58,8 @@ to_char(order_date, 'month') as month from electrokart
 group by product_category, to_char(order_date, 'month')), 
 monthly_category as (select dense_rank() over (partition by product_category order by revenue_total desc) as drnk, * from monthly_total)
 select product_category, month as "mostly sold in the month of" from monthly_category where drnk=1 
---Cross Sell Opportunity
+    
+--Cross Sell Opportunity (whic products are usually bought together by customers)
 with customer_category as (
     select distinct customer_id, product_category
     from electrokart
@@ -68,3 +70,4 @@ order by  count (distinct cc.customer_id) desc
 ) as rn from customer_category cc join customer_category cp on cc.customer_id = cp.customer_id and cc.product_category <> cp.product_category
 group by cc.product_category, cp.product_category)
 select base_category, other_category from ranked_categories where rn = 1 order by base_category;
+
