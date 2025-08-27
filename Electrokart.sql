@@ -59,7 +59,7 @@ group by product_category, to_char(order_date, 'month')),
 monthly_category as (select dense_rank() over (partition by product_category order by revenue_total desc) as drnk, * from monthly_total)
 select product_category, month as "mostly sold in the month of" from monthly_category where drnk=1 
     
---Cross Sell Opportunity (whic products are usually bought together by customers)
+--Cross Sell Opportunity (which products are usually bought together by customers)
 with customer_category as (
     select distinct customer_id, product_category
     from electrokart
@@ -70,4 +70,5 @@ order by  count (distinct cc.customer_id) desc
 ) as rn from customer_category cc join customer_category cp on cc.customer_id = cp.customer_id and cc.product_category <> cp.product_category
 group by cc.product_category, cp.product_category)
 select base_category, other_category from ranked_categories where rn = 1 order by base_category;
+
 
